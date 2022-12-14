@@ -600,15 +600,15 @@ func (g *GameCtrl) onNewCommandFeedBack(p *packet.CommandOutput) {
 
 func (g *GameCtrl) turnOnFeedBack() {
 	//fmt.Println("send sendcommandfeedback true")
-	g.SendCmd("gamerule sendcommandfeedback true")
-	g.CmdFeedBackOnSent = true
+	//g.SendCmd("gamerule sendcommandfeedback true")
+	//g.CmdFeedBackOnSent = true
 }
 
 func (g *GameCtrl) turnOffFeedBack() {
-	g.CurrentCmdFeedBack = false
-	g.CmdFeedBackOnSent = false
+	//g.CurrentCmdFeedBack = false
+	//g.CmdFeedBackOnSent = false
 	//fmt.Println("send sendcommandfeedback false")
-	g.SendCmd("gamerule sendcommandfeedback false")
+	//g.SendCmd("gamerule sendcommandfeedback false")
 }
 
 func (g *GameCtrl) toExpectedFeedBackStatus() {
