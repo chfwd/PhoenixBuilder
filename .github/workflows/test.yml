@@ -15,5 +15,5 @@ jobs:
       
     - name: list
       run: |
-        cd omega_release/launcher
-        make
+        cd ./omega_release/launcher
+        make build
