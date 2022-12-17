@@ -20,6 +20,9 @@ jobs:
       run: |
         cd ./omega_release/launcher
         go build main.go
-        pwd
-        ls
-        echo ${{ GITHUB.WORKSPACE }}
+
+    - name: upload
+      uses: actions/upload-artifact@v3.1.0
+      with:
+        name: Omega
+        path: ${{ GITHUB.WORKSPACE }}\omega_release\launcher\
