@@ -22,4 +22,4 @@ jobs:
         go build main.go
         pwd
         ls
-        echo ${{ GITHUB_WORKSPACE }}
+        echo ${{ GITHUB.WORKSPACE }}
