@@ -20,3 +20,9 @@ jobs:
       run: |
         cd ./omega_release/launcher
         go build main.go
+
+    - name: pwd
+      run: pwd
+
+    - name: ls
+      run: ls
