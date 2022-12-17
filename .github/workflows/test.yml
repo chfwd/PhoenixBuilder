@@ -16,7 +16,7 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v2
       
-    - name: list
+    - name: build
       run: |
-        cd ./omega_release/launcher
-        make
+        cd ./omega_release/releaser
+        ./build.sh
