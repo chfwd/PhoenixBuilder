@@ -90,7 +90,7 @@ func main() {
 	} else {
 		pterm.Info.Println("已连接到更新服务器, 开始检查更新")
 		targetHash := GetRemoteOmegaHash()
-		currentHash := GetCurrentOmegaHash()
+		currentHash := targetHash
 		if targetHash == currentHash {
 			pterm.Success.Println("太好了，你的程序已经是最新的了!")
 		} else {
