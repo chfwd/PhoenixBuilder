@@ -104,8 +104,8 @@ jobs:
     - name: Setup LLVM dependencies
       run: |
         sudo apt install libedit2 libxml2 libncursesw6 binutils elfutils
-        wget -q http://ftp.debian.org/debian/pool/main/libf/libffi/libffi8_3.4.2-4_amd64.deb
-        sudo dpkg -i libffi8_3.4.2-4_amd64.deb
+        wget -q http://ftp.debian.org/debian/pool/main/libf/libffi/libffi8_3.4.4-1_amd64.deb
+        sudo dpkg -i libffi8_3.4.4-1_amd64.deb
       
     - name: Cache LLVM
       id: cache-llvm
@@ -203,7 +203,23 @@ jobs:
       run: |
         export THEOS=~/theos
         make package
-          
+      
+    # - name: Build GUI applications
+      # run: |
+        # export THEOS=~/theos
+        # cd fyne-gui/android_wrapper
+        # go build
+        # cd ..
+        # make all
+        # #node simpleappend.js
+        # rename s/phoenixbuilder/phoenixbuilder-gui/ build/phoenixbuilder*
+        # ls -lh build/>release.txt
+        # mv release.txt build/release-list-gui.txt
+        # cp version build/version-gui.txt
+        # rm -f build/phoenixbuilder-macos-arm64 build/phoenixbuilder-macos-x86_64
+        # mv build ../build/gui
+        # cd ..
+        
     - name: Archive binaries
       run: |
         mv release/*.deb build/
@@ -246,3 +262,24 @@ jobs:
     #    git commit -m "Auto update" -a
     #    git push
     #    cd ..
+    #
+    #- name: Load Key
+    #  env:
+    #    FBKEY: ${{ secrets.FBKEY }}
+    #  if: ${{ env.FBKEY != '' }}
+    #  run: |
+    #    echo "$FBKEY">~/fbkey
+    #    mkdir -p ~/.ssh
+    #    printf "StrictHostKeyChecking no\nUserKnownHostsFile /dev/null">~/.ssh/config
+    #    chmod 0600 ~/fbkey
+    #
+    #- name: Upload binaries and publish
+    #  env:
+    #    FBUSER: ${{ secrets.FBUSER }}
+    #    FBIP: ${{ secrets.FBIP }}
+    #  if: ${{ env.FBUSER != '' && env.FBIP != '' }}
+    #  run: |
+    #    echo "put fb-upload.tar.gz">~/a
+    #    sftp -P 8964 -i ~/fbkey -b ~/a $FBUSER@$FBIP
+    #    ssh -i ~/fbkey $FBUSER@$FBIP -p 8964 "mkdir -p fbbinaries;mv fb-upload.tar.gz fbbinaries/;cd fbbinaries;tar -xzf *.tar.gz;rm *.tar.gz;mv build/* ./;rmdir build;rm -rf /var/www/storage/*;mv * /var/www/storage/;cd ..;rmdir fbbinaries"
+
