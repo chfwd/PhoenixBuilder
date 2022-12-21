@@ -1,4 +1,4 @@
-name: test
+name: Build Omega Launcher
 
 on:
   workflow_dispatch: {}
