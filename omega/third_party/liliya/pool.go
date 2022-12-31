@@ -17,4 +17,6 @@ var DefaultComponentConfigByte []byte
 var Components = map[string]defines.Component{
 	"选取方块": &PickBlock{BasicComponent: &defines.BasicComponent{}},
 	"能力管理": &AbilityManage{BasicComponent: &defines.BasicComponent{}},
+	"挂机检测": &AntiAFK{BasicComponent: &defines.BasicComponent{}},
+	"入睡检测": &PlayersSleepingPercentage{BasicComponent: &defines.BasicComponent{}},
 }
