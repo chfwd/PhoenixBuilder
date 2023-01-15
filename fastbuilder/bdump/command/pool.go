@@ -2,6 +2,7 @@ package command
 
 var BDumpCommandPool map[uint16]func()Command = map[uint16]func()Command {
 	1:  func()Command { return &CreateConstantString{} },
+	5:  func()Command { return &PlaceBlockWithBlockStates{} },
 	6:  func()Command { return &AddInt16ZValue0{} },
 	7:  func()Command { return &PlaceBlock{} },
 	8:  func()Command { return &AddZValue0{} },
@@ -33,7 +34,7 @@ var BDumpCommandPool map[uint16]func()Command = map[uint16]func()Command {
 	36: func()Command { return &PlaceCommandBlockWithCommandBlockData{} },
 	37: func()Command { return &PlaceRuntimeBlockWithChestData{} },
 	38: func()Command { return &PlaceRuntimeBlockWithChestDataAndUint32RuntimeID{} },
-	39: func()Command { return &AssignNBTData{} },
+	39: func()Command { return &AssignDebugData{} },
 	40: func()Command { return &PlaceBlockWithChestData{} },
 	88: func()Command { return &Terminate{} },
 }
