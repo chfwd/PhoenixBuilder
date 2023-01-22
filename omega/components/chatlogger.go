@@ -29,6 +29,9 @@ func (cl *ChatLogger) Inject(frame defines.MainFrame) {
 		if strings.Contains(msg, "alive") {
 			return
 		}
+		if pk.TextType == 10 {
+			return
+		}
 		_l := len(msg)
 		if _l > 200 {
 			msg = msg[:200] + fmt.Sprintf("...[还有%v字]", _l-200)
