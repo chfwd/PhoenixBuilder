@@ -638,6 +638,7 @@ func (g *GameCtrl) SetOnParamMsg(name string, cb func(chat *defines.GameChat) (c
 
 func newGameCtrl(o *Omega) *GameCtrl {
 	analyzer := NewPacketOutAnalyzer(o.adaptor.Write)
+
 	c := &GameCtrl{
 		WriteFn:             analyzer.Write,
 		WriteBytesFn:        o.adaptor.WriteBytes,
@@ -654,6 +655,7 @@ func newGameCtrl(o *Omega) *GameCtrl {
 		placeCommandBlockLock: sync.Mutex{},
 	}
 	c.analyzer = analyzer
+
 	err := o.GetJsonData("playerPermission.json", &c.PlayerPermission)
 	if err != nil {
 		panic(err)

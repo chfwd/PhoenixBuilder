@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	blockNBT_API "phoenixbuilder/fastbuilder/bdump/blockNBT/API"
 	"phoenixbuilder/minecraft/protocol"
 	"phoenixbuilder/minecraft/protocol/packet"
 	"phoenixbuilder/omega/defines"
+	"time"
 )
 
 type PickBlock struct {
@@ -15,7 +15,6 @@ type PickBlock struct {
 	Triggers       []string `json:"菜单触发词"`
 	Usage          string   `json:"菜单项描述"`
 	NeedPermission bool     `json:"OP权限验证"`
-	apis           blockNBT_API.GlobalAPI
 }
 
 func (o *PickBlock) Init(cfg *defines.ComponentConfig, storage defines.StorageAndLogProvider) {
@@ -27,17 +26,6 @@ func (o *PickBlock) Init(cfg *defines.ComponentConfig, storage defines.StorageAn
 
 func (o *PickBlock) Inject(frame defines.MainFrame) {
 	o.Frame = frame
-	o.apis = blockNBT_API.GlobalAPI{
-		WritePacket: func(p packet.Packet) error {
-			o.Frame.GetGameControl().SendMCPacket(p)
-			return nil
-		},
-		BotName:            o.Frame.GetUQHolder().GetBotName(),
-		BotIdentity:        "",
-		BotUniqueID:        o.Frame.GetUQHolder().BotUniqueID,
-		BotRunTimeID:       o.Frame.GetUQHolder().BotRuntimeID,
-		PacketHandleResult: o.Frame.GetNewUQHolder(),
-	}
 	o.Frame.GetGameListener().SetGameMenuEntry(&defines.GameMenuEntry{
 		MenuEntry: defines.MenuEntry{
 			Triggers:     o.Triggers,
@@ -53,57 +41,49 @@ func (o *PickBlock) isOP(name string) bool {
 }
 
 func (o *PickBlock) blockPick(x, y, z int32) {
-	_, err := o.apis.SendWSCommandWithResponce("clear")
-	if err != nil {
-		panic(fmt.Sprintf("blockPick: %v", err))
-	}
-	o.apis.WritePacket(&packet.BlockPickRequest{
+	o.Frame.GetGameControl().SendCmd("clear")
+	o.Frame.GetGameControl().SendMCPacket(&packet.BlockPickRequest{
 		Position:    protocol.BlockPos{x, y, z},
 		AddBlockNBT: true,
 	})
 }
 
 func (o *PickBlock) throwItem() bool {
-	_, err := o.apis.SendWSCommandWithResponce("list")
-	if err != nil {
-		panic(fmt.Sprintf("throwItem: %v", err))
-	}
-	// 刷新背包数据(等待更改)
-	datas, err := o.apis.PacketHandleResult.Inventory.GetItemStackInfo(0, 0)
-	if err != nil {
-		return false
-	}
-	// 取得快捷栏 0 的物品数据
-	if datas.Stack.Count > 0 {
-		ans, err := o.apis.SendItemStackRequestWithResponce(&packet.ItemStackRequest{
-			Requests: []protocol.ItemStackRequest{
-				{
-					Actions: []protocol.StackRequestAction{
-						&protocol.DropStackRequestAction{
-							Count: byte(datas.Stack.Count),
-							Source: protocol.StackRequestSlotInfo{
-								ContainerID:    28,
-								Slot:           0,
-								StackNetworkID: datas.StackNetworkID,
+	// 切换手持物品栏为 0 并且刷新背包数据
+	o.Frame.GetGameControl().SendMCPacket(&packet.PlayerHotBar{
+		SelectedHotBarSlot: 0,
+		WindowID:           0,
+		SelectHotBarSlot:   true,
+	})
+	o.Frame.GetGameControl().SendCmd("replaceitem entity @s slot.inventory 0 apple 1")
+	time.Sleep(time.Second)
+	// 尝试丢出快捷栏第一位的物品
+	uq := o.Frame.GetUQHolder()
+	fmt.Println(uq.InventoryContent[0])
+	if len(uq.InventoryContent[0]) > 0 {
+		if ii := uq.InventoryContent[0][0]; ii.Stack.Count > 0 {
+			o.Frame.GetGameControl().SendMCPacket(&packet.ItemStackRequest{
+				Requests: []protocol.ItemStackRequest{
+					{
+						RequestID: int32(-1),
+						Actions: []protocol.StackRequestAction{
+							&protocol.DropStackRequestAction{
+								Count: byte(ii.Stack.Count),
+								Source: protocol.StackRequestSlotInfo{
+									ContainerID:    28,
+									Slot:           0,
+									StackNetworkID: ii.StackNetworkID,
+								},
+								Randomly: false,
 							},
-							Randomly: false,
 						},
 					},
 				},
-			},
-		})
-		if err != nil {
-			return false
-		}
-		// 发送数据包
-		if ans[0].Status == 0 {
+			})
 			return true
 		}
-		// 返回值
 	}
-	// 尝试丢出物品
 	return false
-	// 返回值
 }
 
 func (o *PickBlock) onInvoke(chat *defines.GameChat) bool {
@@ -114,29 +94,19 @@ func (o *PickBlock) onInvoke(chat *defines.GameChat) bool {
 	}
 	go func() {
 		// 前往玩家位置
-		o.apis.BotName = o.Frame.GetUQHolder().GetBotName()
-		err := o.apis.SendSettingsCommand(fmt.Sprintf("tp @s @a[name=\"%s\"]", chat.Name), true)
-		if err != nil {
-			panic(fmt.Sprintf("onInvoke: %v", err))
-		}
+		o.Frame.GetGameControl().SendCmd(fmt.Sprintf("tp @s @a[name=\"%s\"]", chat.Name))
 		// 获取脚下坐标
-		resp, err := o.apis.SendWSCommandWithResponce("querytarget @s")
-		respString := resp.OutputMessages[0].Parameters[0]
-		var respList []interface{}
-		json.Unmarshal([]byte(respString), &respList)
-		if len(respList) <= 0 {
-			return
-		}
-		respMap := respList[0].(map[string]interface{})
-		x, y, z := int32(math.Floor(respMap["position"].(map[string]interface{})["x"].(float64))), int32(math.Floor(respMap["position"].(map[string]interface{})["y"].(float64)))-2, int32(math.Floor(float64(respMap["position"].(map[string]interface{})["z"].(float64))))
+		time.Sleep(time.Second)
+		pos := o.Frame.GetUQHolder().BotPos.Position
+		x, y, z := int32(math.Floor(float64(pos.X()))), int32(math.Floor(float64(pos.Y())))-2, int32(math.Floor(float64(pos.Z())))
 		// 尝试Pick方块
 		o.blockPick(x, y, z)
 		// 面向玩家并尝试丢出方块
-		o.apis.SendSettingsCommand(fmt.Sprintf("tp ~ ~ ~ facing @a[name=\"%s\"]", chat.Name), true)
+		o.Frame.GetGameControl().SendCmd(fmt.Sprintf("tp ~~~ facing @a[name=\"%s\"]", chat.Name))
 		if o.throwItem() {
-			o.Frame.GetGameControl().SayTo(chat.Name, fmt.Sprintf("§a已成功 §fPick §a位于 §7(§b%d§f, §b%d§f, §b%d§7) §a的方块并丢出", x, y, z))
+			o.Frame.GetGameControl().SayTo(chat.Name, fmt.Sprintf("§a已成功Pick位于§7(%d, %d, %d)§a的方块并丢出", x, y, z))
 		} else {
-			o.Frame.GetGameControl().SayTo(chat.Name, fmt.Sprintf("§c无法 §fPick §c位于 §7(§b%d§f, §b%d§f, §b%d§7) §c的方块", x, y, z))
+			o.Frame.GetGameControl().SayTo(chat.Name, fmt.Sprintf("§c无法Pick位于§7(%d, %d, %d)§c的方块", x, y, z))
 		}
 	}()
 	return true
