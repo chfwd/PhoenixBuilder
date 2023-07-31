@@ -256,7 +256,7 @@ func (c *Container) MoveItemIntoContainer(
 		},
 		uint8(itemData.Stack.Count),
 	)
-	if err != nil {
+	if err != nil && err != GameInterface.ErrMoveItemCheckFailure {
 		return fmt.Errorf("MoveItemIntoContainer: %v", err)
 	}
 	// 将物品移动到容器中
@@ -305,7 +305,7 @@ func (c *Container) GetSubBlock(
 	// 解码并放置子方块
 	resp := c.BlockEntity.Interface.SendWSCommandWithResponse("list")
 	if resp.Error != nil && resp.ErrorType != ResourcesControl.ErrCommandRequestTimeOut {
-		return false, 0, fmt.Errorf("GetSubBlock: %v", err)
+		return false, 0, fmt.Errorf("GetSubBlock: %v", resp.Error)
 	}
 	// 等待更改
 	success, spawnLocation, err := api.PickBlock(
@@ -337,9 +337,16 @@ func (c *Container) GetSubBlock(
 		if resp[0].Destination == nil {
 			return false, 0, fmt.Errorf("WriteData: Inventory was full")
 		}
-		return true, resp[0].Destination.Slot, nil
+		spawnLocation = resp[0].Destination.Slot
 	}
 	// 如果这个子方块有自定义的物品显示名称
+	if item.Basic.Count > 1 {
+		err = api.CopyItem(spawnLocation, c.BlockEntity.AdditionalData.Position, item.Basic.Count)
+		if err != nil {
+			return false, 0, fmt.Errorf("GetSubBlock: %v", err)
+		}
+	}
+	// 如果这个子方块具有堆叠属性，例如告示牌
 	return true, spawnLocation, nil
 	// 返回值
 }
@@ -387,7 +394,7 @@ func (c *Container) GetNBTItem(
 	// 解码并取得该 NBT 物品
 	resp := c.BlockEntity.Interface.SendWSCommandWithResponse("list")
 	if resp.Error != nil && resp.ErrorType != ResourcesControl.ErrCommandRequestTimeOut {
-		return false, fmt.Errorf("GetNBTItem: %v", err)
+		return false, fmt.Errorf("GetNBTItem: %v", resp.Error)
 	}
 	// 等待更改
 	return true, nil
@@ -648,7 +655,7 @@ func (c *Container) ItemPlanner(contents []GeneralItem) ([]GeneralItem, error) {
 					},
 					uint8(itemData.Stack.Count),
 				)
-				if err != nil {
+				if err != nil && err != GameInterface.ErrMoveItemCheckFailure {
 					return fmt.Errorf("subFunc: %v", err)
 				}
 				// 将该物品移动到背包中
@@ -769,7 +776,7 @@ func (c *Container) ItemPlanner(contents []GeneralItem) ([]GeneralItem, error) {
 				},
 				uint8(itemData.Stack.Count),
 			)
-			if err != nil {
+			if err != nil && err != GameInterface.ErrMoveItemCheckFailure {
 				return []GeneralItem{}, fmt.Errorf("ItemPlanner: %v", err)
 			}
 			// 将当前物品移动到容器
